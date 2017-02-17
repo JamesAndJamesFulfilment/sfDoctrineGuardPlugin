@@ -11,16 +11,30 @@ Beginning with version 5.0.0 (the 1.4 stable branch), `sfDoctrineGuardPlugin` al
 provides the option of applying for an account through the site (this is disabled
 by default), and the ability to reset your password if you have forgotten it.
 For security, password reset requires that you know the email address associated with the
-account and be able to receive mail there. However applying for an account does not yet require receiving
-an email message in 5.0.0.
+account and be able to receive mail there. However applying for an account does not yet
+require receiving an email message in 5.0.0.
 
-The 5.x series can require significant migration effort when moving from earlier releases. See the Upgrade section for more information.
+The 5.x series can require significant migration effort when moving from earlier releases.
+See the Upgrade section for more information.
+
+## Notes
+This plugin was initially developer by Fabien Potencier for Symfony1 and later moved to GutHub
+and updated by LExpress group ()https://github.com/LExpress/sfDoctrineGuardPlugin).
+
+Moving this plugin under the FriendsOfSymfony1 organization does not state that this module is
+currently maintained nor under active development.
+The aim is to provide a central place where the outdated plugins can be placed, to reduce the
+number of forks done by organizations that (for any contractual/weird/other reasons) have to
+maintain Symfony1 applications.
+ 
+If you are planning a new project based on Symfony, use the latest and maintained Symfony release, you
+will ll not regret it ;) 
 
 ## Installation ##
 
   * Install the plugin (via composer)
 
-        composer require lexpress/sf-doctrine-guard-plugin
+        composer require fos1/sf-doctrine-guard-plugin
 
   * Activate the plugin in the `config/ProjectConfiguration.class.php`
 

@@ -16,7 +16,7 @@
  * @author     Fabien Potencier <fabien.potencier@symfony-project.com>
  * @version    SVN: $Id$
  */
-class sfGuardUserGroupsListTask extends sfBaseTask
+class sfGuardUserGroupListTask extends sfBaseTask
 {
   protected function configure()
   {
@@ -29,7 +29,7 @@ class sfGuardUserGroupsListTask extends sfBaseTask
       new sfCommandOption('env', null, sfCommandOption::PARAMETER_REQUIRED, 'The environment', 'dev'),
     ));
 
-    $this->name = 'user:groups-list';
+    $this->name = 'user:group-list';
     $this->namespace = 'guard';
     $this->briefDescription = 'List the Groups associated to a user';
   }

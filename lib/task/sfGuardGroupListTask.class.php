@@ -28,6 +28,7 @@ class sfGuardGroupListTask extends sfBaseTask
 
     $this->addOptions(array(
       new sfCommandOption('with-perm', null, sfCommandOption::PARAMETER_NONE, 'Join with Permissions'),
+      new sfCommandOption('with-description', null, sfCommandOption::PARAMETER_NONE, 'Show group description'),
       new sfCommandOption('with-users', null, sfCommandOption::PARAMETER_NONE, 'Join with Users'),
       new sfCommandOption('application', null, sfCommandOption::PARAMETER_OPTIONAL, 'The application name', null),
       new sfCommandOption('env', null, sfCommandOption::PARAMETER_REQUIRED, 'The environment', 'dev'),
@@ -59,21 +60,26 @@ EOF;
 
       /** @var sfGuardGroup $group */
     foreach($groups as $group) {
-        $this->logSection('guard', sprintf('%d : %s', $group->getPrimaryKey(), $group->getName()));
+        if ($options['with-description']) {
+            $this->logSection('guard', sprintf('%d : %s (%s)', $group->getPrimaryKey(), $group->getName(), $group->getDescription()));
+        } else {
+            $this->logSection('guard', sprintf('%d : %s', $group->getPrimaryKey(), $group->getName()));
+        }
 
         if ($options['with-perm']) {
+            $this->logSection('guard', sprintf('   - Permission:'));
             /** @var sfGuardPermission $permission */
             foreach ($group->getPermissions() as $permission) {
-                $this->logSection('guard', sprintf('   - Permission: %s', $permission->getName()));
+                $this->logSection('guard', sprintf('     * %s', $permission->getName()));
+            }
+        }
+        if ($options['with-users']) {
+            $this->logSection('guard', sprintf('   - Users:'));
+            /** @var sfGuardUser $user */
+            foreach ($group->getUsers() as $user) {
+                $this->logSection('guard', sprintf('     * %d: %s', $user->getPrimaryKey(), $user->getEmailAddress()));
             }
         }
     }
-      if ($options['with-users']) {
-          /** @var sfGuardUser $user */
-          foreach ($group->getUsers() as $user) {
-              $this->logSection('guard', sprintf('   - User %d:  %s', $user->getPrimaryKey(), $user->getName()));
-          }
-      }
-
   }
 }

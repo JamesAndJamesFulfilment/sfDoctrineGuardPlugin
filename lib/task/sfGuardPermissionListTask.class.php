@@ -43,12 +43,12 @@ class sfGuardPermissionListTask extends sfBaseTask
 
     $this->logSection('guard', sprintf('Found %d Permissions', $perms->count()));
 
-      /** @var sfGuardGroup $perm */
+      /** @var sfGuardPermission $perm */
     foreach($perms as $perm) {
         $this->logSection('guard', sprintf(' - %s', $perm->getName()));
         if ($options['with-groups']) {
-            foreach ($perm->getPermissions() as $permission) {
-                $this->logSection('guard', sprintf('   - Permission: %s', $permission->getName()));
+            foreach ($perm->getSfGuardGroupPermission() as $groupPermission) {
+                $this->logSection('guard', sprintf('   - Group: %s', $groupPermission->getGroup()->getName()));
             }
         }
     }

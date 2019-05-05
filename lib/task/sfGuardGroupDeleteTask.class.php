@@ -27,7 +27,6 @@ class sfGuardGroupDeleteTask extends sfBaseTask
     ));
 
     $this->addOptions(array(
-      new sfCommandOption('description', null, sfCommandOption::PARAMETER_REQUIRED, 'The Group description', null),
       new sfCommandOption('application', null, sfCommandOption::PARAMETER_OPTIONAL, 'The application name', null),
       new sfCommandOption('env', null, sfCommandOption::PARAMETER_REQUIRED, 'The environment', 'dev'),
     ));
@@ -39,7 +38,7 @@ class sfGuardGroupDeleteTask extends sfBaseTask
     $this->detailedDescription = <<<EOF
 The [guard:group:delete|INFO] task deletes a group:
 
-  [./symfony guard:group:delete GroupName --description="This is a nice Group description"|INFO]
+  [./symfony guard:group:delete GroupName|INFO]
 EOF;
   }
 

@@ -65,7 +65,7 @@ EOF;
         }
 
         if (null !== $options['description']) {
-            $entity->setDescription($arguments['description']);
+            $entity->setDescription($options['description']);
         }
         if ($options['name']) {
             $entity->setName($options['name']);

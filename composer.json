@@ -1,7 +1,8 @@
 {
-    "name": "fos1/sf-doctrine-guard-plugin",
+    "name": "james-and-james-fulfilment/sf-doctrine-guard-plugin",
     "type": "symfony1-plugin",
-    "description": "Identity management plugin for Symfony",
+    "description": "Fork of identity management plugin for Symfony",
+    "keywords": ["symfony1", "doctrine1", "sfDoctrineGuardPlugin"],
     "license": "MIT",
     "authors": [
         {
@@ -22,5 +23,9 @@
     ],
     "require": {
         "composer/installers": "~1.0"
+    },
+    "support": {
+        "issues": "https://github.com/JamesAndJamesFulfilment/sfDoctrineGuardPlugin/issues",
+        "source": "https://github.com/JamesAndJamesFulfilment/sfDoctrineGuardPlugin"
     }
 }

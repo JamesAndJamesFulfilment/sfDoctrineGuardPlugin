@@ -3,19 +3,20 @@
 /*
  * This file is part of the symfony package.
  * (c) Fabien Potencier <fabien.potencier@symfony-project.com>
- *
+ * 
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
 /**
- * Adds a sfGuard group to a user.
+ * Promote a user as a super administrator.
  *
  * @package    symfony
  * @subpackage task
- * @author     Emanuele Panzeri <thepanz@gmail.com>
+ * @author     Fabien Potencier <fabien.potencier@symfony-project.com>
+ * @version    SVN: $Id$
  */
-class sfGuardUserGroupAddTask extends sfBaseTask
+class sfGuardPromoteSuperAdminTask extends sfBaseTask
 {
   /**
    * @see sfTask
@@ -24,7 +25,6 @@ class sfGuardUserGroupAddTask extends sfBaseTask
   {
     $this->addArguments(array(
       new sfCommandArgument('username', sfCommandArgument::REQUIRED, 'The user name'),
-      new sfCommandArgument('group', sfCommandArgument::REQUIRED, 'The group name'),
     ));
 
     $this->addOptions(array(
@@ -33,15 +33,15 @@ class sfGuardUserGroupAddTask extends sfBaseTask
     ));
 
     $this->namespace = 'guard';
-    $this->name = 'user:group-add';
-    $this->briefDescription = 'Adds a group to a user';
+    $this->name = 'promote';
+    $this->briefDescription = 'Promotes a user as a super administrator';
 
     $this->detailedDescription = <<<EOF
-The [guard:user:group-add|INFO] task adds a group to a user:
+The [guard:promote|INFO] task promotes a user as a super administrator:
 
-  [./symfony guard:user:group-add fabien admin-group|INFO]
+  [./symfony guard:promote fabien|INFO]
 
-The user and the group must exist in the database.
+The user must exist in the database.
 EOF;
   }
 
@@ -52,17 +52,16 @@ EOF;
   {
     $databaseManager = new sfDatabaseManager($this->configuration);
 
-    $model = sfConfig::get('app_sf_guard_user_model', 'sfGuardUser');
+    $user = Doctrine_Core::getTable('sfGuardUser')->findOneByUsername($arguments['username']);
 
-    /** @var sfGuardUser $user */
-    $user = Doctrine_Core::getTable($model)->findOneByUsername($arguments['username']);
     if (!$user)
     {
       throw new sfCommandException(sprintf('User "%s" does not exist.', $arguments['username']));
     }
 
-    $user->addGroupByName($arguments['group']);
+    $user->setIsSuperAdmin(true);
+    $user->save();
 
-    $this->logSection('guard', sprintf('Add group %s to user %s', $arguments['group'], $arguments['username']));
+    $this->logSection('guard', sprintf('Promote user %s as a super administrator', $arguments['username']));
   }
 }

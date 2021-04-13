@@ -41,12 +41,12 @@ class sfGuardBasicSecurityFilter extends sfBasicSecurityFilter
       )
       {
         $q = Doctrine_Core::getTable('sfGuardRememberKey')->createQuery('r')
-              ->innerJoin('r.User u')
+              ->innerJoin('r.sfGuardUser u')
               ->where('r.remember_key = ?', $cookie);
 
         if ($q->count())
         {
-          $this->context->getUser()->signIn($q->fetchOne()->User);
+          $this->context->getUser()->signIn($q->fetchOne()->sfGuardUser);
         }
       }
     }

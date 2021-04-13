@@ -10,60 +10,24 @@
  */
 abstract class PluginsfGuardUserTable extends Doctrine_Table
 {
-  /**
-   * Retrieves a sfGuardUser object by username and is_active flag.
-   *
-   * @param  string  $username The username
-   * @param  boolean $isActive The user's status
-   *
-   * @return sfGuardUser
-   */
-  public function retrieveByUsername($username, $isActive = true)
-  {
-    $query = $this->createQuery('u')
-      ->where('u.username = ?', $username)
-      ->addWhere('u.is_active = ?', $isActive)
-    ;
-
-    return $query->fetchOne();
-  }
-
-  /**
-   * Retrieves a sfGuardUser object by username or email_address and is_active flag.
-   *
-   * @param  string  $username The username
-   * @param  boolean $isActive The user's status
-   *
-   * @return sfGuardUser
-   */
-  public function retrieveByUsernameOrEmailAddress($username, $isActive = true)
-  {
-    $query = Doctrine_Core::getTable('sfGuardUser')->createQuery('u')
-      ->where('u.username = ? OR u.email_address = ?', array($username, $username))
-      ->addWhere('u.is_active = ?', $isActive)
-    ;
-
-    return $query->fetchOne();
-  }
-
-  /**
-   * Get choices
-   *
-   * @return array
-   */
-  public function getChoices()
-  {
-    $q = $this->createQuery('u')
-      ->select('u.id, u.username')
-      ->orderBy('u.username');
-
-    $choices = array();
-
-    foreach ($q->fetchArray() as $type)
+    /**
+     * Retrieves a sfGuardUser object by username and is_active flag.
+     *
+     * @param  string  $username The username
+     * @param  boolean $only_include_active Whether to include only active users (true) or all users (false)
+     *
+     * @return sfGuardUser
+     */
+    public function retrieveByUsername($username, $only_include_active = true)
     {
-      $choices[$type['id']] = trim($type['username']);
-    }
+        $query = Doctrine_Core::getTable('sfGuardUser')
+            ->createQuery('u')
+            ->where('u.username = ?', $username);
 
-    return $choices;
-  }
+        if ($only_include_active) {
+            $query->addWhere('u.is_active = 1');
+        }
+
+        return $query->execute();
+    }
 }

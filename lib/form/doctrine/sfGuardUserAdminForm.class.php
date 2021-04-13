@@ -15,6 +15,5 @@ class sfGuardUserAdminForm extends BasesfGuardUserAdminForm
    */
   public function configure()
   {
-  	$this->widgetSchema->getFormFormatter()->setTranslationCatalogue('sf_guard');
   }
 }

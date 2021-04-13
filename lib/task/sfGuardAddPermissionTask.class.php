@@ -53,10 +53,7 @@ EOF;
   {
     $databaseManager = new sfDatabaseManager($this->configuration);
 
-    $model = sfConfig::get('app_sf_guard_user_model', 'sfGuardUser');
-
-    /** @var sfGuardUser $user */
-    $user = Doctrine_Core::getTable($model)->findOneByUsername($arguments['username']);
+    $user = Doctrine_Core::getTable('sfGuardUser')->findOneByUsername($arguments['username']);
     if (!$user)
     {
       throw new sfCommandException(sprintf('User "%s" does not exist.', $arguments['username']));

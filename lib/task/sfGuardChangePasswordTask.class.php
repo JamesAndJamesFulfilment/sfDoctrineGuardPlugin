@@ -55,8 +55,7 @@ EOF;
   {
     $databaseManager = new sfDatabaseManager($this->configuration);
 
-    $model = sfConfig::get('app_sf_guard_user_model', 'sfGuardUser');
-    $user = Doctrine_Core::getTable($model)->findOneByUsername($arguments['username']);
+    $user = Doctrine_Core::getTable('sfGuardUser')->findOneByUsername($arguments['username']);
 
     if (!$user)
     {

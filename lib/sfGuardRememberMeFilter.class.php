@@ -43,17 +43,13 @@ class sfGuardRememberMeFilter extends sfFilter
       $cookie = $this->context->getRequest()->getCookie($cookieName)
     )
     {
-      $model = sfConfig::get('app_sf_guard_user_model', 'sfGuardUser');
-
-      $q = Doctrine_Core::getTable($model)->createQuery('u')
-        ->select('u.*')
-        ->innerJoin('u.RememberKeys r')
-        ->where('u.is_active = ?', true)
-        ->addWhere('r.remember_key = ?', $cookie);
+      $q = Doctrine_Core::getTable('sfGuardRememberKey')->createQuery('r')
+            ->innerJoin('r.sfGuardUser u')
+            ->where('r.remember_key = ?', $cookie);
 
       if ($q->count())
       {
-        $this->context->getUser()->signIn($q->fetchOne());
+        $this->context->getUser()->signIn($q->fetchOne()->sfGuardUser);
       }
     }
 

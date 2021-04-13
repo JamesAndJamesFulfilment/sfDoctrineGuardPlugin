@@ -91,13 +91,6 @@ class sfGuardSecurityUser extends sfBasicSecurityUser
       return true;
     }
 
-    // Not very well.
-    // Used by the OcariMenu to check if a user don't have a credential
-    if (!is_array($credential) && 0 === strpos($credential, '!'))
-    {
-      return !in_array(substr($credential, 1), $this->credentials);
-    }
-
     return parent::hasCredential($credential, $useAnd);
   }
 
@@ -130,15 +123,17 @@ class sfGuardSecurityUser extends sfBasicSecurityUser
    */
   public function signIn($user, $remember = false, $con = null)
   {
-    // save last login
-    $user->setLastLogin(date('Y-m-d H:i:s'));
-    $user->save($con);
-
     // signin
     $this->setAttribute('user_id', $user->getId(), 'sfGuardSecurityUser');
     $this->setAuthenticated(true);
     $this->clearCredentials();
-    $this->addCredentials($user->getAllPermissionNames());
+    $this->addCredentials($user->getPermissionNames());
+
+    // invalidate user cache in case permissions changed in DB
+    $user->reloadGroupsAndPermissions();
+    // save last login
+    $user->setLastLogin(date('Y-m-d H:i:s'));
+    $user->save($con);
 
     // remember?
     if ($remember)
@@ -163,14 +158,13 @@ class sfGuardSecurityUser extends sfBasicSecurityUser
       // save key
       $rk = new sfGuardRememberKey();
       $rk->setRememberKey($key);
-      $rk->setUser($user);
+      $rk->setsfGuardUser($user);
       $rk->setIpAddress($_SERVER['REMOTE_ADDR']);
       $rk->save($con);
 
       // make key as a cookie
       $remember_cookie = sfConfig::get('app_sf_guard_plugin_remember_cookie_name', 'sfRemember');
-      $remember_domain = sfConfig::get('app_sf_guard_plugin_remember_cookie_domain', '');
-      sfContext::getInstance()->getResponse()->setCookie($remember_cookie, $key, time() + $expiration_age, $remember_domain);
+      sfContext::getInstance()->getResponse()->setCookie($remember_cookie, $key, time() + $expiration_age);
     }
   }
 
@@ -183,7 +177,14 @@ class sfGuardSecurityUser extends sfBasicSecurityUser
    */
   protected function generateRandomKey($len = 20)
   {
-    return base_convert(sha1(uniqid(mt_rand(), true)), 16, 36);
+    $string = '';
+    $pool   = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    for ($i = 1; $i <= $len; $i++)
+    {
+      $string .= substr($pool, rand(0, 61), 1);
+    }
+
+    return md5($string);
   }
 
   /**
@@ -198,43 +199,31 @@ class sfGuardSecurityUser extends sfBasicSecurityUser
     $this->setAuthenticated(false);
     $expiration_age = sfConfig::get('app_sf_guard_plugin_remember_key_expiration_age', 15 * 24 * 3600);
     $remember_cookie = sfConfig::get('app_sf_guard_plugin_remember_cookie_name', 'sfRemember');
-    $remember_domain = sfConfig::get('app_sf_guard_plugin_remember_cookie_domain', '');
-    sfContext::getInstance()->getResponse()->setCookie($remember_cookie, '', time() - $expiration_age, $remember_domain);
+    sfContext::getInstance()->getResponse()->setCookie($remember_cookie, '', time() - $expiration_age);
   }
 
-  /**
-   * Returns the related sfGuardUser.
-   *
-   * @return sfGuardUser
-   */
-  public function getGuardUser()
-  {
-    if (!$this->user && $id = $this->getAttribute('user_id', null, 'sfGuardSecurityUser'))
+    /**
+     * Returns the related sfGuardUser.
+     *
+     * @return sfGuardUser
+     */
+    public function getGuardUser()
     {
-      $this->user = $this->findGuardUser($id);
-
-      if (!$this->user)
-      {
-        // the user does not exist anymore in the database
-        $this->signOut();
-
-        throw new sfException('The user does not exist anymore in the database.');
-      }
+        if (!$this->user && $id = $this->getAttribute('user_id', null, 'sfGuardSecurityUser')) {
+            $this->user = Doctrine_Query::create()
+                ->from('sfGuardUser u')
+                ->where('u.id = ?', $id)
+                ->useQueryCache(true)
+                ->useResultCache(true, SharedCacheHelper::ONE_HOUR, "sfGuardUser-{$id}")
+                ->fetchOne();
+            if (!$this->user) {
+                // the user does not exist anymore in the database
+                $this->signOut();
+                throw new sfException('The user no longer exists in the database.');
+            }
+        }
+        return $this->user;
     }
-
-    return $this->user;
-  }
-
-  /**
-   * Find sfGuardUser by id.
-   *
-   * @param  int $id User id
-   * @return sfGuardUser
-   */
-  protected function findGuardUser($id)
-  {
-    return Doctrine_Core::getTable('sfGuardUser')->find($id);
-  }
 
   /**
    * Returns the string representation of the object.
@@ -257,23 +246,13 @@ class sfGuardSecurityUser extends sfBasicSecurityUser
   }
 
   /**
-   * Returns the name(first and last) of the user
-   *
-   * @return string
-   */
-  public function getName()
-  {
-    return $this->getGuardUser()->getName();
-  }
-
-  /**
    * Returns the sfGuardUser object's email.
    *
    * @return string
    */
   public function getEmail()
   {
-    return $this->getGuardUser()->getEmailAddress();
+    return $this->getGuardUser()->getEmail();
   }
 
   /**
@@ -285,6 +264,7 @@ class sfGuardSecurityUser extends sfBasicSecurityUser
   public function setPassword($password, $con = null)
   {
     $this->getGuardUser()->setPassword($password);
+    $this->getGuardUser()->setExpires(date(MYSQL_DATE,strtotime("+ ".sfConfig::get('app_client_password_expiry_days')." days")));
     $this->getGuardUser()->save($con);
   }
 
@@ -311,16 +291,6 @@ class sfGuardSecurityUser extends sfBasicSecurityUser
   }
 
   /**
-   * Returns the user's groups.
-   *
-   * @return array|Doctrine_Collection
-   */
-  public function getGroups()
-  {
-    return $this->getGuardUser() ? $this->getGuardUser()->getGroups() : array();
-  }
-
-  /**
    * Returns the user's group names.
    *
    * @return array
@@ -343,16 +313,6 @@ class sfGuardSecurityUser extends sfBasicSecurityUser
   }
 
   /**
-   * Returns the Doctrine_Collection of single sfGuardPermission objects.
-   *
-   * @return Doctrine_Collection
-   */
-  public function getPermissions()
-  {
-    return $this->getGuardUser()->getPermissions();
-  }
-
-  /**
    * Returns the array of permissions names.
    *
    * @return array
@@ -360,26 +320,6 @@ class sfGuardSecurityUser extends sfBasicSecurityUser
   public function getPermissionNames()
   {
     return $this->getGuardUser() ? $this->getGuardUser()->getPermissionNames() : array();
-  }
-
-  /**
-   * Returns the array of all permissions.
-   *
-   * @return array
-   */
-  public function getAllPermissions()
-  {
-    return $this->getGuardUser() ? $this->getGuardUser()->getAllPermissions() : array();
-  }
-
-  /**
-   * Returns the array of all permissions names.
-   *
-   * @return array
-   */
-  public function getAllPermissionNames()
-  {
-    return $this->getGuardUser() ? $this->getGuardUser()->getAllPermissionNames() : array();
   }
 
   /**

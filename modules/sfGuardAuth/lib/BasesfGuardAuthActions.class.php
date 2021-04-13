@@ -15,34 +15,54 @@
  * @author     Fabien Potencier <fabien.potencier@symfony-project.com>
  * @version    SVN: $Id$
  */
-class BasesfGuardAuthActions extends sfActions
+class BasesfGuardAuthActions extends genericActions
 {
   public function executeSignin($request)
   {
     $user = $this->getUser();
     if ($user->isAuthenticated())
     {
-      return $this->redirect('@homepage');
+      return $this->redirect('homepage');
     }
 
-    $class = sfConfig::get('app_sf_guard_plugin_signin_form', 'sfGuardFormSignin'); 
-    $this->form = new $class();
+    $class = sfConfig::get('app_sf_guard_plugin_signin_form', 'sfGuardFormSignin');
 
-    if ($request->isMethod('post'))
+    if( $username = $user->getAttribute('new_username', '') )
     {
-      $this->form->bind($request->getParameter($this->form->getName()));
+      $user->setAttribute('new_username', null );
+    }
+    $this->form = new $class(['username' => $username ]);
+
+    if( $request->isMethod('post') && $request->hasParameter('signin') )
+    {
+      $this->form->bind($request->getParameter('signin'));
       if ($this->form->isValid())
       {
-        $values = $this->form->getValues(); 
+        $values = $this->form->getValues();
+
+        if( $this->getUser()->requiresPasswordUpdate() )
+        {
+          return $this->redirect('setup', ['section' => 'password']);
+        }
+
         $this->getUser()->signin($values['user'], array_key_exists('remember', $values) ? $values['remember'] : false);
 
         // always redirect to a URL set in app.yml
         // or to the referer
         // or to the homepage
-        $signinUrl = sfConfig::get('app_sf_guard_plugin_success_signin_url', $user->getReferer($request->getReferer()));
+        $signin_url = sfConfig::get('app_sf_guard_plugin_success_signin_url', $user->getReferer( $request->getReferer() ) );
 
-        return $this->redirect('' != $signinUrl ? $signinUrl : '@homepage');
+        $redirect_url = 'homepage';
+        if( $signin_url != '')
+        {
+          $chosen_app  = explode('.', $_SERVER['HTTP_HOST'] )[ 0 ];
+          $referer_app = explode('.', parse_url( $signin_url )['host'] )[ 0 ];
+
+          $redirect_url = $chosen_app == $referer_app ? $signin_url : $redirect_url;
+        }
+        return $this->redirect( $redirect_url );
       }
+      $this->getUser()->addFlash('error', 'Login failed, please retry', false );
     }
     else
     {
@@ -56,13 +76,22 @@ class BasesfGuardAuthActions extends sfActions
 
       // if we have been forwarded, then the referer is the current URL
       // if not, this is the referer of the current request
-      $user->setReferer($this->getContext()->getActionStack()->getSize() > 1 ? $request->getUri() : $request->getReferer());
+      if( $request->isMethod( sfRequest::GET ) )
+      { // Only setReferrer for non-post/put requests as these can't be redirected to after signin
+        $uri = $request->getUri();
+        if( substr( $uri, -5 ) == '.json')
+        { // Strip json suffixes from uris before saving as referer
+          $uri = substr( $uri, 0, -5 );
+        }
+        $user->setReferer($this->getContext()->getActionStack()->getSize() > 1 ? $uri : $request->getReferer());
+      }
 
       $module = sfConfig::get('sf_login_module');
       if ($this->getModuleName() != $module)
       {
         return $this->redirect($module.'/'.sfConfig::get('sf_login_action'));
       }
+      $this->getResponse()->setStatusCode(401);
     }
   }
 
@@ -72,11 +101,16 @@ class BasesfGuardAuthActions extends sfActions
 
     $signoutUrl = sfConfig::get('app_sf_guard_plugin_success_signout_url', $request->getReferer());
 
-    $this->redirect('' != $signoutUrl ? $signoutUrl : '@homepage');
+    $this->redirect('' != $signoutUrl ? $signoutUrl : 'homepage');
   }
 
   public function executeSecure($request)
   {
     $this->getResponse()->setStatusCode(403);
+  }
+
+  public function executePassword($request)
+  {
+    throw new sfException('This method is not yet implemented.');
   }
 }
